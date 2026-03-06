@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mortal Kombat - Adivina el Combo</title>
+
+  <!--Fuentes estilo arcade-->
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/estilos.css"/>
+
+  <!--jQuery-->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+
+<body>
+
+<!-- ==============================================
+     PANTALLA DE INTRO
+     Visible al cargar la página.
+     Se oculta con fadeOut al presionar FIGHT.
+============================================== -->
+<div id="pantalla-intro">
+
+  <!--
+    Logo: img/Mortal-Kombat-Logo.png
+  -->
+  <img id="logo-mk" src="img/Mortal-Kombat-Logo.png" alt="Mortal Kombat"/>
+
+  <!-- Reglas del juego y presentación de personajes -->
+  <div id="reglas">
+    <h2>⚔ Cómo jugar</h2>
+
+    <!--
+      Scorpion (el jugador): img/scorpion-idle_.gif (117x200)
+    -->
+    <div class="fila-personaje">
+      <img src="img/scorpion-idle_.gif" alt="Scorpion"/>
+      <div class="info">
+        <strong>Tú eres Scorpion 🟡</strong>
+        Debes descifrar el combo secreto de Sub-Zero.<br/>
+        Adivina el número entre <strong style="color:#f0c040">1 y 100</strong>.
+      </div>
+    </div>
+
+    <!--
+      Sub-Zero (el enemigo): img/subzero-ataque.gif
+    -->
+    <div class="fila-personaje">
+      <img src="img/subzero-ataque.gif" alt="Sub-Zero"/>
+      <div class="info">
+        <strong>Enemigo: Sub-Zero 🔵</strong>
+        Tienes 10 intentos para vencerlo.<br/>
+        Cada fallo te quita vida. Si aciertas… <strong style="color:#c0392b">FATALITY</strong>.
+      </div>
+    </div>
+
+    <p style="color:#555; font-size:.75rem; margin-top:6px;">
+      💡 Después de cada intento sabrás si el número es mayor o menor.
+    </p>
+    <p style="color:#555; font-size:.75rem; margin-top:4px;">
+    🔵 La barra de Sub-Zero indica qué tan cerca estás: ❄ frío, 🌡 tibio, 🔥 finish him.
+    </p>
+  </div>
+
+  <button id="btn-start">⚡ FIGHT ⚡</button>
+
+</div><!-- fin #pantalla-intro -->
+
+
+<!-- ==============================================
+     JUEGO PRINCIPAL
+     Oculto al inicio. Aparece con fadeIn tras FIGHT.
+============================================== -->
+<div id="juego">
+
+  <!--
+    Fondo animado (se ajusta la opacidad en el css)
+  -->
+  <div id="fondo"></div>
+
+  <!-- ---- BARRAS DE VIDA ---- -->
+  <div id="header-vidas">
+
+    <!-- Barra de Scorpion — izquierda -->
+    <div class="bloque-luchador izquierdo">
+      <span class="nombre-luchador">Scorpion</span>
+      <div class="barra-vida-wrap">
+        <div class="barra-vida" id="vida-scorpion" style="width:100%"></div>
+      </div>
+    </div>
+
+    <div id="vs-texto">VS</div>
+
+    <!-- Barra de Sub-Zero — derecha -->
+    <div class="bloque-luchador derecho">
+      <span class="nombre-luchador">Sub-Zero</span>
+      <div class="barra-vida-wrap">
+        <div class="barra-vida" id="vida-subzero" style="width:100%">
+          <!-- Texto de proximidad: se actualiza desde juego.js -->
+          <span id="texto-proximidad"></span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- fin #header-vidas -->
+
+  <!-- Contador de intentos -->
+  <div id="intentos-top">
+    Intento <span id="num-intento">1</span> de 10
+  </div>
+
+  <!-- ---- ZONA DE ARENA ---- -->
+  <div id="arena">
+
+    <!--
+      SCORPION — lado izquierdo (jugador)
+      Sprite inicial: img/scorpion-idle_.gif
+      JS cambia el src según estado:
+        idle (1-3):    scorpion-idle_.gif
+        ataque (4-6):  scorpion-ataque.gif
+        mareado (>=7):  scorpion-mareado.gif  ← SOLO cuando casi pierde
+        victoria:      scorpion_win.gif
+      El margin-left lo mueve JS según proximidad al número.
+    -->
+    <img id="img-scorpion" src="img/scorpion-idle_.gif" alt="Scorpion"/>
+
+    <!--
+      SUB-ZERO — lado derecho (enemigo)
+      Sprite: img/subzero-victoria.gif
+      Volteado con scaleX(-1) en CSS para mirar hacia Scorpion.
+      El margin-right lo mueve JS según proximidad al número.
+    -->
+    <img id="img-subzero" src="img/subzero-ataque.gif" alt="Sub-Zero"/>
+
+  </div><!-- fin #zona de arena -->
+
+  <!-- ---- PANEL DE JUEGO ---- -->
+  <div id="panel">
+
+    <div id="mensaje">Descifra el combo de Sub-Zero (1-100)</div>
+
+    <div id="input-fila">
+      <input
+        id="campo-numero"
+        type="number"
+        min="1"
+        max="100"
+        placeholder="1 — 100"
+        autocomplete="off"
+      />
+      <button id="btn-adivinar">ATACAR</button>
+    </div>
+
+    <!-- JS lo muestra al terminar el juego -->
+    <button id="btn-reiniciar">↺ NUEVA BATALLA</button>
+
+  </div><!-- fin #panel -->
+
+  <!-- ---- HISTORIAL ---- -->
+  <p id="historial-titulo">— combos intentados —</p>
+  <div id="lista-intentos"></div>
+
+</div><!-- fin #juego -->
+
+
+<!-- ==============================================
+     PANTALLA FINAL (victoria o derrota)
+     JS controla qué GIF mostrar y el texto.
+     Clic encima la cierra.
+============================================== -->
+<div id="pantalla-final">
+
+  <!--
+    Victoria: img/subzero_lose_scorpin_win.gif 
+    Derrota: img/fatality-final.gif    
+    src asignado desde JS
+  -->
+  <img id="gif-escena" src="" alt="escena final"/>
+
+  <!--
+    Letrero FATALITY: img/fatality_sin_fondo.gif 
+    Solo visible en victoria (JS lo controla)
+  -->
+  <img id="img-fatality-texto" src="img/fatality_sin_fondo.gif" alt="FATALITY"/>
+
+  <div id="texto-resultado"></div>
+  <span id="hint-clic">[ clic para continuar ]</span>
+
+</div><!-- fin #pantalla-final -->
+
+
+<!-- ==============================================
+     AUDIOS — carpeta audio/
+     preload="auto" = se precargan al cargar la página
+     Se reproducen con la función reproducir() en el js
+============================================== -->
+<!--
+  MÚSICA DE FONDO: loop continuo durante el juego.
+  Se inicia en iniciarMusica() cuando el jugador presiona FIGHT.
+  loop y volume se configuran desde juego.js
+-->
+<audio id="audio-musica"   src="audio/intro-to-mortal-kombat.mp3"          preload="auto"></audio>
+
+<!-- Sonido puntual "FIGHT!" al iniciar la batalla -->
+<audio id="audio-fight"    src="audio/the-appearance-of-mortal-kombat.mp3" preload="auto"></audio>
+
+<!-- Grito de Scorpion: zona TIBIO -->
+<audio id="audio-golpe"    src="audio/scorpion-sound.mp3"                  preload="auto"></audio>
+
+<!-- FATALITY: al ganar -->
+<audio id="audio-fatality" src="audio/fatality.mp3"                        preload="auto"></audio>
+
+<!-- "Finish Him": zona CALIENTE -->
+<audio id="audio-finish"   src="audio/finish-him-off.mp3"                  preload="auto"></audio>
+
+<!-- Risa: zona FRÍO -->
+<audio id="audio-risa"     src="audio/ha-ha-ha-laugh.mp3"                  preload="auto"></audio>
+
+<!-- Sub-Zero gana: al perder -->
+<audio id="audio-subzero"  src="audio/sub-zero.mp3"                        preload="auto"></audio>
+
+
+<script src="js/juego.js"></script>
+
+</body>
+</html>
